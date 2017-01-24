@@ -124,7 +124,8 @@ function onPointerMove(e) {
             $('.navbar-text').html(code2name[p.COUNTY_ID] + ' > ' + code2name[p.TOWN_ID] + ' > ' + p.CODE1);
         }
     });
-};
+}
+;
 
 function onLayerClick(e) {
     var hasFeature = false;
@@ -139,11 +140,15 @@ function onLayerClick(e) {
                 }),
                 style: layerStyle
             });
+            targetLayer.once('change', function () {
+                if (targetLayer.getSource().getState() === 'ready') {
+                    fillTargetColor();
+                }
+            });
             map.addLayer(targetLayer);
             cityLayer.setVisible(false);
             map.getView().setCenter(e.coordinate);
             map.getView().setZoom(12);
-            setTimeout(fillTargetColor, 1500);
         } else {
             $('.navbar-text').html(code2name[p.COUNTY_ID] + ' > ' + code2name[p.TOWN_ID] + ' > ' + p.CODE1);
             var message = '';
