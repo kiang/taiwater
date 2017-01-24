@@ -7,6 +7,80 @@ var layerStyle = new ol.style.Style({
         color: 'rgba(0,200,200,0.1)'
     })
 });
+var colorPool = {
+    a: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,255,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,255,255,0.3)'
+        })
+    }),
+    b: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(50,255,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(50,255,0,0.3)'
+        })
+    }),
+    c: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,255,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,255,0,0.3)'
+        })
+    }),
+    d: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,200,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,200,0,0.3)'
+        })
+    }),
+    e: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,0,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,0,0,0.3)'
+        })
+    }),
+    f: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(255,220,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(255,220,0,0.3)'
+        })
+    }),
+    g: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(81,255,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(81,255,0,0.3)'
+        })
+    }),
+    h: new ol.style.Style({
+        stroke: new ol.style.Stroke({
+            color: 'rgba(0,0,0,0.6)',
+            width: 2
+        }),
+        fill: new ol.style.Fill({
+            color: 'rgba(0,0,0,0.3)'
+        })
+    })
+};
 var targetLayer, dataWater, selectedCounty, code2name = {};
 var waterType = {
     '1': '普通用水',
@@ -187,85 +261,21 @@ function onLayerClick(e) {
 
 function ColorBar(value) {
     if (value == 0)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(255,255,255,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,255,255,0.3)'
-            })
-        })
+        return colorPool.a;
     else if (value <= 5000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(50,255,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(50,255,0,0.3)'
-            })
-        })
+        return colorPool.b
     else if (value <= 10000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(255,255,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,255,0,0.3)'
-            })
-        })
+        return colorPool.c
     else if (value <= 20000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(255,200,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,200,0,0.3)'
-            })
-        })
+        return colorPool.d
     else if (value <= 30000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(255,0,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,0,0,0.3)'
-            })
-        })
+        return colorPool.e
     else if (value <= 50000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(255,220,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(255,220,0,0.3)'
-            })
-        })
+        return colorPool.f
     else if (value <= 100000)
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(81,255,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(81,255,0,0.3)'
-            })
-        })
+        return colorPool.g
     else
-        return new ol.style.Style({
-            stroke: new ol.style.Stroke({
-                color: 'rgba(0,0,0,0.6)',
-                width: 2
-            }),
-            fill: new ol.style.Fill({
-                color: 'rgba(0,0,0,0.3)'
-            })
-        })
+        return colorPool.h
 }
 
 function fillTargetColor() {
