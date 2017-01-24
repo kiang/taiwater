@@ -1,223 +1,277 @@
-$.ajaxSetup({async: false});
-var loadedCity = {}, currentCity = '';
-var map, area, headers;
-$.getJSON('sum.json', {}, function (p) {
-    for (k in p) {
-        var parts = k.split('|');
-        if (parts[0] !== 'code1') {
-            continue;
-        }
-        for (m in p[k]) {
-            var c = p[k][m]['county'].replace(/臺/, '台');
-            if (!loadedCity[c]) {
-                loadedCity[c] = {
-                    data: {},
-                    json: false
-                };
-            }
-            if (!loadedCity[c]['data'][parts[1]]) {
-                loadedCity[c]['data'][parts[1]] = {};
-            }
-            loadedCity[c]['data'][parts[1]][m] = p[k][m]['amount'];
-        }
-    }
-
+var layerStyle = new ol.style.Style({
+    stroke: new ol.style.Stroke({
+        color: 'rgba(0,255,255,0.6)',
+        width: 2
+    }),
+    fill: new ol.style.Fill({
+        color: 'rgba(0,200,200,0.1)'
+    })
 });
-var showCity = function (city) {
-    $('.modal').dialog({
-        title: "資料載入中",
-        modal: true,
-        width: 300,
-        height: 200,
-        closeOnEscape: false,
-        resizable: false,
-        open: function () {
-            $(".ui-dialog-titlebar-close", $(this).parent()).hide(); //hides the little 'x' button
-        }
-    });
-    $('body').addClass("loading");
-    currentCity = city;
-    $('.mapCity').each(function (k, e) {
-        var eCity = $(e).html();
-        if (eCity === currentCity) {
-            $(e).removeClass('btn-default').addClass('btn-primary');
-        } else {
-            $(e).removeClass('btn-primary').addClass('btn-default');
-        }
-    });
-    if (loadedCity[currentCity].json === false) {
-        $.getJSON('json/' + currentCity + '.json', function (data) {
-            loadedCity[currentCity]['json'] = data;
+var targetLayer, dataWater, selectedCounty, code2name = {};
+var waterType = {
+    '1': '普通用水',
+    '2': '商業用水',
+    '3': '工業用水',
+    '4': '機關用水',
+    '6': '市政用水',
+    '7': '船舶用水',
+    '8': '優惠用水',
+    '9': '臨時用水'
+};
+$.getJSON('2016.json', {}, function (d) {
+    dataWater = d;
+});
+
+var projection = ol.proj.get('EPSG:3857');
+var projectionExtent = projection.getExtent();
+var size = ol.extent.getWidth(projectionExtent) / 256;
+var resolutions = new Array(20);
+var matrixIds = new Array(20);
+for (var z = 0; z < 20; ++z) {
+    // generate resolutions and matrixIds arrays for this WMTS
+    resolutions[z] = size / Math.pow(2, z);
+    matrixIds[z] = z;
+}
+var popup = new ol.Overlay.Popup();
+
+/*
+ * layer
+ * EMAP2: 臺灣通用電子地圖透明
+ * EMAP6: 臺灣通用電子地圖(不含等高線)
+ * EMAP7: 臺灣通用電子地圖EN(透明)
+ * EMAP8: Taiwan e-Map
+ * PHOTO2: 臺灣通用正射影像
+ * ROAD: 主要路網
+ */
+var baseLayer = new ol.layer.Tile({
+    source: new ol.source.WMTS({
+        matrixSet: 'EPSG:3857',
+        format: 'image/png',
+        url: 'http://maps.nlsc.gov.tw/S_Maps/wmts',
+        layer: 'EMAP6',
+        tileGrid: new ol.tilegrid.WMTS({
+            origin: ol.extent.getTopLeft(projectionExtent),
+            resolutions: resolutions,
+            matrixIds: matrixIds
+        }),
+        style: 'default',
+        wrapX: true,
+        attributions: '<a href="http://maps.nlsc.gov.tw/" target="_blank">國土測繪圖資服務雲</a>'
+    }),
+    opacity: 0.8
+});
+
+var mapLayers = [baseLayer, new ol.layer.Tile({
+        source: new ol.source.WMTS({
+            matrixSet: 'EPSG:3857',
+            format: 'image/png',
+            url: 'http://maps.nlsc.gov.tw/S_Maps/wmts',
+            layer: 'ROAD',
+            tileGrid: new ol.tilegrid.WMTS({
+                origin: ol.extent.getTopLeft(projectionExtent),
+                resolutions: resolutions,
+                matrixIds: matrixIds
+            }),
+            style: 'default',
+            wrapX: true
+        }),
+        opacity: 0.3
+    })];
+var cityLayer = new ol.layer.Vector({
+    source: new ol.source.Vector({
+        url: 'topo/city.topo.json',
+        format: new ol.format.TopoJSON()
+    }),
+    style: layerStyle
+});
+cityLayer.on('change', function () {
+    if (cityLayer.getSource().getState() === 'ready') {
+        cityLayer.getSource().forEachFeature(function (ff) {
+            var p = ff.getProperties();
+            if (!code2name[p.COUNTYCODE]) {
+                code2name[p.COUNTYCODE] = p.COUNTYNAME;
+            }
+            if (!code2name[p.TOWNCODE]) {
+                code2name[p.TOWNCODE] = p.TOWNNAME;
+            }
         });
     }
-    map.data.forEach(function (l) {
-        map.data.remove(l);
-    });
-    area = map.data.addGeoJson(loadedCity[currentCity]['json']);
-    switch (city) {
-        case '新北市':
-            map.setCenter({lat: 25.053699, lng: 121.507837});
-            break;
-        case '桃園市':
-            map.setCenter({lat: 24.9656572, lng: 121.222804});
-            break;
-        case '台中市':
-            map.setCenter({lat: 24.167804, lng: 120.658214});
-            break;
-        case '台南市':
-            map.setCenter({lat: 22.996169, lng: 120.201330});
-            break;
-        case '高雄市':
-            map.setCenter({lat: 22.643894, lng: 120.317828});
-            break;
-        case '宜蘭縣':
-            map.setCenter({lat: 24.677393, lng: 121.767628});
-            break;
-        case '新竹縣':
-            map.setCenter({lat: 24.726808, lng: 121.109712});
-            break;
-        case '苗栗縣':
-            map.setCenter({lat: 24.532913, lng: 120.836947});
-            break;
-        case '彰化縣':
-            map.setCenter({lat: 24.009515, lng: 120.502431});
-            break;
-        case '南投縣':
-            map.setCenter({lat: 23.939787, lng: 120.968750});
-            break;
-        case '雲林縣':
-            map.setCenter({lat: 23.693670, lng: 120.438016});
-            break;
-        case '嘉義縣':
-            map.setCenter({lat: 23.464988, lng: 120.327423});
-            break;
-        case '屏東縣':
-            map.setCenter({lat: 22.598342, lng: 120.540550});
-            break;
-        case '台東縣':
-            map.setCenter({lat: 22.766960, lng: 121.082108});
-            break;
-        case '花蓮縣':
-            map.setCenter({lat: 23.700363, lng: 121.458446});
-            break;
-        case '澎湖縣':
-            map.setCenter({lat: 23.564544, lng: 119.612168});
-            break;
-        case '基隆市':
-            map.setCenter({lat: 25.124337, lng: 121.735592});
-            break;
-        case '新竹市':
-            map.setCenter({lat: 24.797534, lng: 120.968834});
-            break;
-        case '嘉義市':
-            map.setCenter({lat: 23.479583, lng: 120.454789});
-            break;
-    }
-    showArea();
-    setTimeout(function () {
-        $('body').removeClass("loading");
-        $('.modal').dialog('close');
-    }, 500);
-}
+})
+mapLayers.push(cityLayer);
+var map = new ol.Map({
+    layers: mapLayers,
+    target: 'map',
+    controls: ol.control.defaults({
+        attributionOptions: /** @type {olx.control.AttributionOptions} */ ({
+            collapsible: false
+        })
+    }),
+    view: new ol.View({
+        center: ol.proj.fromLonLat([121, 24]),
+        zoom: 10
+    })
+});
+map.addOverlay(popup);
+map.on('singleclick', onLayerClick);
+map.on('pointermove', onPointerMove);
 
-var showArea = function (areaCode) {
-    if (!areaCode) {
-        areaCode = '';
-    }
-    area.forEach(function (value) {
-        var key = value.getProperty('CODE1'),
-                count = 0;
-        if (loadedCity[currentCity]['data'][key]) {
-            if (loadedCity[currentCity]['data'][key]['201609']) {
-                count += parseInt(loadedCity[currentCity]['data'][key]['201609']);
-            }
-            if (loadedCity[currentCity]['data'][key]['201610']) {
-                count += parseInt(loadedCity[currentCity]['data'][key]['201610']);
-            }
-        }
-        if (isNaN(count)) {
-            count = 0;
-        }
-        value.setProperty('num', count);
-        if (areaCode === key) {
-            showFeature(value);
-        }
-    });
-    map.data.setStyle(function (feature) {
-        color = ColorBar(feature.getProperty('num'));
-        return {
-            fillColor: color,
-            fillOpacity: 0.6,
-            strokeWeight: 0
+function onPointerMove(e) {
+    map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+        var p = feature.getProperties();
+        if (p.COUNTYCODE) {
+            $('.navbar-text').html(p.COUNTYNAME + ' > ' + p.TOWNNAME);
+        } else if (p.CODE1) {
+            $('.navbar-text').html(code2name[p.COUNTY_ID] + ' > ' + code2name[p.TOWN_ID] + ' > ' + p.CODE1);
         }
     });
 };
-function showFeature(feature) {
-    var area = feature.getProperty('TOWN') + '[' + feature.getProperty('CODE1') + ']';
-    var areaKey = feature.getProperty('CODE1');
-    var detail = '<h3>' + area + '</h3><div style="float:right;">單位：(度)</div><table class="table table-boarded">';
-    var targetHash = '#' + areaKey;
-    if (loadedCity[currentCity]['data'][areaKey]) {
-        for (m in loadedCity[currentCity]['data'][areaKey]) {
-            detail += '<tr><td>' + m + '</td><td>' + loadedCity[currentCity]['data'][areaKey][m] + '</td></tr>';
+
+function onLayerClick(e) {
+    var hasFeature = false;
+    map.forEachFeatureAtPixel(e.pixel, function (feature, layer) {
+        var p = feature.getProperties();
+        if (p.COUNTYCODE) {
+            $('.navbar-text').html(p.COUNTYNAME + ' > ' + p.TOWNNAME);
+            targetLayer = new ol.layer.Vector({
+                source: new ol.source.Vector({
+                    url: 'topo/' + p.COUNTYCODE + '.json',
+                    format: new ol.format.TopoJSON()
+                }),
+                style: layerStyle
+            });
+            map.addLayer(targetLayer);
+            cityLayer.setVisible(false);
+            map.getView().setCenter(e.coordinate);
+            map.getView().setZoom(12);
+            setTimeout(fillTargetColor, 1500);
+        } else {
+            $('.navbar-text').html(code2name[p.COUNTY_ID] + ' > ' + code2name[p.TOWN_ID] + ' > ' + p.CODE1);
+            var message = '';
+            if (dataWater[p.CODE1] && dataWater[p.CODE1].total > 0) {
+                message += '<table class="table table-bordered"><thead><tr><td>月份</td><td>類型</td><td>用水量(度)</td></tr></thead><tbody>';
+                for (ym in dataWater[p.CODE1]) {
+                    if (ym !== 'total') {
+                        var ymDone = false;
+                        for (t in dataWater[p.CODE1][ym]) {
+                            var ymStr = '';
+                            if (!ymDone) {
+                                ymStr = ym;
+                                ymDone = true;
+                            }
+                            message += '<tr><td>' + ymStr + '</td><td>' + waterType[t] + '</td><td>' + dataWater[p.CODE1][ym][t] + '</td></tr>';
+                        }
+                    }
+                }
+                message += '</tbody></table>';
+            }
+            if (message !== '') {
+                popup.show(e.coordinate, message);
+            }
+            map.getView().setCenter(e.coordinate);
+            map.getView().setZoom(14);
         }
-    }
-    detail += '</table>';
-    $('#areaDetail').html(detail);
-    if (window.location.hash !== targetHash) {
-        window.location.hash = targetHash;
+        hasFeature = true;
+    });
+    if (false === hasFeature) {
+        cityLayer.setVisible(true);
+        map.getView().setZoom(12);
+        targetLayer.setVisible(false);
+        popup.hide();
     }
 }
 
-var routes = {
-    '/:theButton/:areaCode': showArea,
-    '/:theButton': showArea
-};
-var router = Router(routes);
-function initialize() {
-    /*map setting*/
-    $('#map-canvas').height(window.outerHeight / 2.2);
-    map = new google.maps.Map(document.getElementById('map-canvas'), {
-        zoom: 11,
-        center: {lat: 25.053699, lng: 121.507837}
-    });
-    showCity('新北市');
-    router.init();
-    $('.mapCity').click(function () {
-        showCity($(this).html());
-        return false;
-    });
-    map.data.addListener('mouseover', function (event) {
-        var Area = event.feature.getProperty('TOWN') + '[' + event.feature.getProperty('CODE1') + ']';
-        map.data.revertStyle();
-        map.data.overrideStyle(event.feature, {fillColor: 'white'});
-        $('#content').html('<div>' + Area + ' ：' + event.feature.getProperty('num') + ' </div>').removeClass('text-muted');
-    });
-    map.data.addListener('click', function (event) {
-        showFeature(event.feature);
-    });
-    map.data.addListener('mouseout', function (event) {
-        map.data.revertStyle();
-        $('#content').html('在地圖上滑動或點選以顯示數據').addClass('text-muted');
-    });
-}
-
-google.maps.event.addDomListener(window, 'load', initialize);
 function ColorBar(value) {
     if (value == 0)
-        return "#FFFFFF"
-    else if (value <= 2000)
-        return "#FFFF66"
-    else if (value <= 4000)
-        return "#FFFF00"
-    else if (value <= 6000)
-        return "#FFBF00"
-    else if (value <= 8000)
-        return "#FF9F00"
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(255,255,255,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,255,255,0.3)'
+            })
+        })
+    else if (value <= 5000)
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(50,255,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(50,255,0,0.3)'
+            })
+        })
     else if (value <= 10000)
-        return "#FF3F00"
-    else if (value <= 12000)
-        return "#FF0000"
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(255,255,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,255,0,0.3)'
+            })
+        })
+    else if (value <= 20000)
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(255,200,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,200,0,0.3)'
+            })
+        })
+    else if (value <= 30000)
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(255,0,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,0,0,0.3)'
+            })
+        })
+    else if (value <= 50000)
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(255,220,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(255,220,0,0.3)'
+            })
+        })
+    else if (value <= 100000)
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(81,255,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(81,255,0,0.3)'
+            })
+        })
     else
-        return "#CC0000"
+        return new ol.style.Style({
+            stroke: new ol.style.Stroke({
+                color: 'rgba(0,0,0,0.6)',
+                width: 2
+            }),
+            fill: new ol.style.Fill({
+                color: 'rgba(0,0,0,0.3)'
+            })
+        })
+}
+
+function fillTargetColor() {
+    targetLayer.getSource().forEachFeature(function (ff) {
+        var cp = ff.getProperties();
+        var colorDone = false;
+        for (k in dataWater) { // k = code1
+            if (colorDone === false && k == cp.CODE1) {
+                ff.setStyle(ColorBar(dataWater[k].total));
+                colorDone = true;
+            }
+        }
+    });
 }
