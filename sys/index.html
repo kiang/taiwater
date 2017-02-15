@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta property="og:title" content="台水供水系統地圖(100-104)">
+        <meta property="og:description" content="台水供水系統地圖以台灣自來水公司提供的 供水系統供水資料 繪製">
+        <meta property="og:type" content="website">
+        <meta property="og:image" content="http://kiang.github.io/taiwater/sys/og_image.png">
+        <title>台水供水系統地圖(100-104)</title>
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.20.1/ol.css" type="text/css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap-theme.min.css" integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous">
+        <link rel="stylesheet" href="plugins/ol3-popup.css" type="text/css">
+        <style>
+            html, body {
+                margin: 0;
+                padding: 0;
+                height: 100%;
+                width: 100%;
+            }
+            .ol-popup-content {
+                width: 600px;
+            }
+            td {
+                border: 1px solid black;
+                margin: 0;
+                padding: 3px;
+            }
+            #map {
+                position: absolute;
+                width: auto;
+                height: auto;
+                top: 50px;
+                left: 0;
+                right: 0;
+                bottom: 0;
+            }
+        </style>
+    </head>
+    <body>
+        <!-- Fixed navbar -->
+        <nav class="navbar navbar-default navbar-fixed-top">
+            <div class="container">
+                <div class="navbar-header">
+                    <a class="navbar-brand" href="#">台水供水系統地圖(100-104)</a>
+                </div>
+                <div id="navbar" class="navbar-collapse collapse">
+                    <ul class="nav navbar-nav">
+                        <li><a href="https://github.com/kiang/taiwater/" target="_blank">Source @ Github</a></li>
+                        <li><a href="http://www.water.gov.tw/ct.aspx?xItem=153656&CtNode=3395&mp=1" target="_blank">Data</a></li>
+                    </ul>
+                    <p class="navbar-text navbar-right"></p>
+                </div><!--/.nav-collapse -->
+            </div>
+        </nav>
+        <div id="map" class="map"></div>
+        <!-- The line below is only needed for old environments like Internet Explorer and Android 4.x -->
+        <script src="https://cdn.polyfill.io/v2/polyfill.min.js?features=requestAnimationFrame,Element.prototype.classList,URL"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/ol3/3.20.1/ol.js"></script>
+        <script src="https://code.jquery.com/jquery-3.1.1.min.js"></script>
+        <script src="plugins/ol3-popup.js"></script>
+        <script src="main.js"></script>
+    </body>
+</html>
